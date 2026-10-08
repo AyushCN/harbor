@@ -9,9 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/yourusername/harbor/internal/auth"
-	"github.com/yourusername/harbor/internal/config"
-	"github.com/yourusername/harbor/internal/database"
+	"github.com/AyushCN/harbor/internal/auth"
+	"github.com/AyushCN/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/database"
 )
 
 type CreateShareLinkRequest struct {

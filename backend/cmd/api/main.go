@@ -12,10 +12,10 @@ import (
 	"github.com/nats-io/nats.go"
 	"go.uber.org/zap"
 
-	"github.com/yourusername/harbor/internal/config"
-	"github.com/yourusername/harbor/internal/database"
-	harborhttp "github.com/yourusername/harbor/internal/http"
-	"github.com/yourusername/harbor/internal/presence"
+	"github.com/AyushCN/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/database"
+	harborhttp "github.com/AyushCN/harbor/internal/http"
+	"github.com/AyushCN/harbor/internal/presence"
 )
 
 func main() {

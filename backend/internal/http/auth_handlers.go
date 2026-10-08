@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yourusername/harbor/internal/auth"
-	"github.com/yourusername/harbor/internal/database"
+	"github.com/AyushCN/harbor/internal/auth"
+	"github.com/AyushCN/harbor/internal/database"
 )
 
 func handleGitHubLogin(c *gin.Context) {

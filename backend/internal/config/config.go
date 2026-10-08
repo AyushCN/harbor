@@ -34,9 +34,9 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		Env:            getEnv("ENV", "development"),
-		Port:           getEnv("PORT", "8080"),
+		Port:           getEnv("PORT", "8082"),
 		FrontendURL:    getEnv("FRONTEND_URL", "http://localhost:3000"),
-		APIURL:         getEnv("API_URL", "http://localhost:8080"),
+		APIURL:         getEnv("API_URL", "http://localhost:8082"),
 		DatabaseURL:    getEnv("DATABASE_URL", ""),
 		RedisURL:       getEnv("REDIS_URL", "redis://localhost:6379"),
 		NatsURL:        getEnv("NATS_URL", "nats://localhost:4222"),

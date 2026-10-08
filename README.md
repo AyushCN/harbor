@@ -82,7 +82,7 @@ Worker + Docker (Environments) — NATS JetStream
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/harbor.git
+git clone https://github.com/AyushCN/harbor.git
 cd harbor
 
 # 2. Copy environment file
@@ -146,7 +146,7 @@ Current focus: **building a solid single-host collaborative foundation**.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/harbor.git
+git clone https://github.com/AyushCN/harbor.git
 cd harbor
 
 # 2. Copy environment file

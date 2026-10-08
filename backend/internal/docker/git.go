@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/yourusername/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/config"
 )
 
 type GitClient struct {

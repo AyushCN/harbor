@@ -26,7 +26,9 @@ import {
   Activity,
   Globe,
   Plus,
-  MoreVertical
+  MoreVertical,
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 
 export default function EnvironmentDetailPage() {
@@ -187,10 +189,10 @@ export default function EnvironmentDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <DetailRow label="Repository" value={env.workspace?.git_url || 'Unknown'} copyable />
-                  <DetailRow label="Branch" value={env.workspace?.git_branch || 'main'} />
+                  <DetailRow label="Repository" value={env.workspace?.git_url || env.git_url || 'Unknown'} copyable />
+                  <DetailRow label="Branch" value={env.workspace?.git_branch || env.git_branch || 'main'} />
                   <DetailRow label="Created" value={new Date(env.created_at).toLocaleString()} />
-                  <DetailRow label="Host" value={env.host.username} avatar={env.host.avatar_url} />
+                  <DetailRow label="Host" value={env.host?.username || 'Unknown'} avatar={env.host?.avatar_url} />
                 </div>
                 
                 {env.public_url && (
@@ -290,6 +292,28 @@ export default function EnvironmentDetailPage() {
             </Card>
           </div>
 
+          {/* Build Log Panel */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Terminal className="w-5 h-5" />
+                Build Log
+                {env.status === 'BUILDING' && (
+                  <span className="text-amber-600 text-sm font-normal">● Building</span>
+                )}
+                {env.status === 'RUNNING' && (
+                  <span className="text-green-600 text-sm font-normal">● Ready</span>
+                )}
+                {env.status === 'BUILD_FAILED' && (
+                  <span className="text-red-600 text-sm font-normal">● Failed</span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BuildLogPanel environmentId={env.id} status={env.status} />
+            </CardContent>
+          </Card>
+
           <div className="space-y-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -371,16 +395,120 @@ export default function EnvironmentDetailPage() {
 
           <div className="lg:col-span-3">
             <Card>
-              <CardHeader>
-                <CardTitle>Activity Log</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Terminal className="w-5 h-5" />
+                  Build Log
+                  {env?.status === 'BUILDING' && (
+                    <span className="text-amber-600 text-sm font-normal">● Building</span>
+                  )}
+                  {env?.status === 'RUNNING' && (
+                    <span className="text-green-600 text-sm font-normal">● Ready</span>
+                  )}
+                  {env?.status === 'BUILD_FAILED' && (
+                    <span className="text-red-600 text-sm font-normal">● Failed</span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-500 text-center py-8">Activity log coming soon</p>
+                <BuildLogPanel environmentId={env.id} status={env?.status} />
               </CardContent>
             </Card>
           </div>
-        </div>
-      </main>
+}
+}
+
+// ============ BuildLogPanel Component ============
+function BuildLogPanel({ environmentId, status }: { environmentId: string; status?: string }) {
+  const [logs, setLogs] = useState<Array<{ id: string; sequence: number; message: string; level: string; created_at: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  useEffect(() => {
+    // Fetch historical logs
+    fetch(`/api/v1/environments/${environmentId}/logs?limit=200`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.logs) {
+          setLogs(data.logs);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+
+    // Connect to WebSocket for real-time logs
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/api/v1/environments/${environmentId}/build-logs/ws`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const log = JSON.parse(event.data);
+        if (log.type === 'log' && log.message) {
+          setLogs(prev => [...prev, log]);
+        }
+      } catch (err) {
+        console.error('Failed to parse log message:', err);
+      }
+    };
+
+    ws.onerror = () => {
+      console.error('WebSocket error');
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [environmentId]);
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'success': return 'text-green-600';
+      case 'error': return 'text-red-600';
+      case 'warn': return 'text-amber-600';
+      default: return 'text-slate-600';
+    }
+  };
+
+  const getStatusIndicator = () => {
+    if (status === 'BUILDING') return <span className="text-amber-600">● Building...</span>;
+    if (status === 'RUNNING') return <span className="text-green-600">● Ready</span>;
+    if (status === 'BUILD_FAILED') return <span className="text-red-600">● Failed</span>;
+    return <span className="text-slate-400">● Waiting</span>;
+  };
+
+  if (loading) {
+    return <div className="h-64 flex items-center justify-center text-slate-400">Loading build logs...</div>;
+  }
+
+  return (
+    <div className="h-64 overflow-y-auto bg-slate-900 rounded-lg p-4 font-mono text-sm text-slate-100">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700">
+        <span className="text-xs text-slate-400">Status:</span>
+        {getStatusIndicator()}
+        <span className="ml-auto text-xs text-slate-500">{logs.length} lines</span>
+      </div>
+      <div className="space-y-1">
+        {logs.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-slate-500">
+            No build logs yet
+          </div>
+        ) : (
+          logs.map((log) => (
+            <div
+              key={log.id}
+              className={`flex gap-2 ${getLevelColor(log.level)}`}
+            >
+              <span className="text-slate-500 w-20 shrink-0">
+                {new Date(log.created_at).toLocaleTimeString()}
+              </span>
+              <span className="text-xs font-mono w-6 shrink-0">
+                {log.sequence.toString().padStart(4, '0')}
+              </span>
+              <span className="flex-1 break-all whitespace-pre-wrap">{log.message}</span>
+            </div>
+          ))}
+      </div>
     </div>
   );
 }
@@ -403,4 +531,4 @@ function DetailRow({ label, value, copyable, avatar }: { label: string; value: s
       </div>
     </div>
   );
-}
+}}

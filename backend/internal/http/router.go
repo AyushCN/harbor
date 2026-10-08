@@ -9,11 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/yourusername/harbor/internal/auth"
-	"github.com/yourusername/harbor/internal/config"
-	"github.com/yourusername/harbor/internal/database"
-	"github.com/yourusername/harbor/internal/presence"
-	"github.com/yourusername/harbor/internal/worker"
+	"github.com/AyushCN/harbor/internal/auth"
+	"github.com/AyushCN/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/database"
+	"github.com/AyushCN/harbor/internal/presence"
+	"github.com/AyushCN/harbor/internal/worker"
 )
 
 func NewRouter(cfg *config.Config, pool *database.Pool, pm *presence.Manager, nc *nats.Conn) *gin.Engine {

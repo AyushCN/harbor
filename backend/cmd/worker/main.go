@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/yourusername/harbor/internal/worker"
+	"github.com/AyushCN/harbor/internal/worker"
 )
 
 func main() {

@@ -13,9 +13,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
-	"github.com/yourusername/harbor/internal/config"
-	"github.com/yourusername/harbor/internal/database"
-	"github.com/yourusername/harbor/internal/docker"
+	"github.com/AyushCN/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/database"
+	"github.com/AyushCN/harbor/internal/docker"
 )
 
 type JobType string
@@ -236,17 +236,24 @@ func (w *Worker) handleCreate(ctx context.Context, job Job) error {
 	})
 	if err != nil {
 		w.queries.UpdateEnvironmentStatus(ctx, job.EnvironmentID, "BUILD_FAILED")
+		emitLog("error", "✗ BUILD FAILED: "+err.Error())
 		return fmt.Errorf("build and run: %w", err)
 	}
 
-	// Generate public URL
-	publicURL := fmt.Sprintf("https://%s.%s", job.EnvironmentID.String()[:12], w.cfg.TraefikDomain)
+	publicURL := fmt.Sprintf("http://%s.%s", job.EnvironmentID.String()[:8], w.cfg.TraefikDomain)
 
-	// Update environment with container info
 	if err := w.queries.UpdateEnvironmentContainer(ctx, job.EnvironmentID, containerID, port, publicURL); err != nil {
+		w.queries.UpdateEnvironmentStatus(ctx, job.EnvironmentID, "BUILD_FAILED")
+		emitLog("error", "✗ Failed to save container info")
 		return fmt.Errorf("update environment container: %w", err)
 	}
 
+	// Explicit success
+	if err := w.queries.UpdateEnvironmentStatus(ctx, job.EnvironmentID, "RUNNING"); err != nil {
+		return fmt.Errorf("update status to RUNNING: %w", err)
+	}
+
+	emitLog("success", "✓ Environment is READY")
 	log.Printf("Environment %s created successfully", job.EnvironmentID)
 	return nil
 }

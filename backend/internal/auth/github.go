@@ -14,8 +14,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/yourusername/harbor/internal/config"
-	"github.com/yourusername/harbor/internal/database"
+	"github.com/AyushCN/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/database"
 )
 
 type GitHubUser struct {

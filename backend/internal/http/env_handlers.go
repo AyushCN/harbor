@@ -6,16 +6,19 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/yourusername/harbor/internal/auth"
-	"github.com/yourusername/harbor/internal/config"
-	"github.com/yourusername/harbor/internal/database"
-	"github.com/yourusername/harbor/internal/worker"
+	"github.com/AyushCN/harbor/internal/auth"
+	"github.com/AyushCN/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/database"
+	"github.com/AyushCN/harbor/internal/worker"
+	"github.com/nats-io/nats.go"
 )
 
 func ptrToString(s *string) string {
@@ -522,7 +525,7 @@ func getBuildLogs(c *gin.Context) {
 	queries := database.NewQueries(pool)
 
 	// Check access
-	role, err := queries.GetUserRoleInEnvironment(c.Request.Context(), envID, userID)
+	_, err = queries.GetUserRoleInEnvironment(c.Request.Context(), envID, userID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusForbidden, gin.H{
@@ -592,7 +595,7 @@ func handleBuildLogsWS(c *gin.Context) {
 	queries := database.NewQueries(pool)
 
 	// Check access
-	_, err := queries.GetUserRoleInEnvironment(c.Request.Context(), envID, userID)
+	_, err = queries.GetUserRoleInEnvironment(c.Request.Context(), envID, userID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			c.JSON(http.StatusForbidden, gin.H{
@@ -607,7 +610,8 @@ func handleBuildLogsWS(c *gin.Context) {
 	}
 
 	// Upgrade to WebSocket
-	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	var ws *websocket.Conn
+	ws, err = upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade failed: %v", err)
 		return
@@ -671,10 +675,4 @@ func handleBuildLogsWS(c *gin.Context) {
 			}
 		}
 	}
-}
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins in development
-	},
 }

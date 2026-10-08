@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/yourusername/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/config"
 )
 
 func NewRedisClient(cfg *config.Config) (*redis.Client, error) {

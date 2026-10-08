@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,7 +14,7 @@ import (
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
-	"github.com/yourusername/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/config"
 )
 
 type Client struct {
@@ -214,15 +213,16 @@ func (c *Client) BuildAndRun(ctx context.Context, opts BuildOptions) (string, in
 		return "", 0, fmt.Errorf("container start: %w", err)
 	}
 
-	// Wait for container to be ready and get port mapping
-	port, err := c.waitForPort(ctx, containerID, "3000")
-	if err != nil {
+	// Wait for container to be ready
+	// Since Traefik reaches containers directly over the Docker network,
+	// we just wait for the container to be running, not for host port binding
+	if err := c.waitForPort(ctx, containerID, "3000"); err != nil {
 		_, _ = c.cli.ContainerStop(ctx, containerID, client.ContainerStopOptions{Timeout: &[]int{10}[0]})
 		_, _ = c.cli.ContainerRemove(ctx, containerID, client.ContainerRemoveOptions{Force: true})
-		return "", 0, fmt.Errorf("wait for port: %w", err)
+		return "", 0, fmt.Errorf("wait for container: %w", err)
 	}
 
-	return containerID, port, nil
+	return containerID, 0, nil
 }
 
 func (c *Client) detectLanguageAndDockerfile(workspacePath string) (string, string, error) {
@@ -377,33 +377,26 @@ CMD ["node", "server.js"]
 	return "node", dockerfile, nil
 }
 
-func (c *Client) waitForPort(ctx context.Context, containerID string, exposedPort string) (int, error) {
+// Wait for container to be ready
+// Since Traefik reaches containers directly over the Docker network,
+// we just wait for the container to be running, not for host port binding
+func (c *Client) waitForPort(ctx context.Context, containerID string, exposedPort string) error {
 	for i := 0; i < 30; i++ {
 		inspect, err := c.cli.ContainerInspect(ctx, containerID, client.ContainerInspectOptions{})
 		if err != nil {
-			return 0, err
+			return err
 		}
 
 		if inspect.Container.State.Running {
-			for port, bindings := range inspect.Container.NetworkSettings.Ports {
-				if strings.HasSuffix(port.Port(), "/tcp") {
-					for _, pb := range bindings {
-						if pb.HostPort != "" {
-							var hostPort int
-							fmt.Sscanf(pb.HostPort, "%d", &hostPort)
-							if hostPort > 0 {
-								return hostPort, nil
-							}
-						}
-					}
-				}
-			}
+			// Container is running - Traefik reaches it over the Docker network
+			// using the harbor.* labels we set. No host port binding needed.
+			return nil
 		}
 
 		time.Sleep(2 * time.Second)
 	}
 
-	return 0, fmt.Errorf("timeout waiting for port")
+	return fmt.Errorf("timeout waiting for container to start")
 }
 
 func (c *Client) StartContainer(ctx context.Context, containerID string) error {

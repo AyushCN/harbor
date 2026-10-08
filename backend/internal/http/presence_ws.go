@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5"
-	"github.com/yourusername/harbor/internal/auth"
-	"github.com/yourusername/harbor/internal/database"
-	"github.com/yourusername/harbor/internal/presence"
+	"github.com/AyushCN/harbor/internal/auth"
+	"github.com/AyushCN/harbor/internal/database"
+	"github.com/AyushCN/harbor/internal/presence"
 )
 
 var upgrader = websocket.Upgrader{

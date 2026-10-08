@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
-	"github.com/yourusername/harbor/internal/config"
+	"github.com/AyushCN/harbor/internal/config"
 )
 
 //go:embed migrations/*.up.sql
